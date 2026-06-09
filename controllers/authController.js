@@ -1,0 +1,87 @@
+import User from '../models/User.js';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+
+export const register = async (req, res) => {
+    const { username, email, password } = req.body;
+
+    if (!username || !email || !password) {
+        return res.status(400).json({ message: 'Please provide all required fields' });
+    }
+
+    try {
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ message: 'User already exists' });
+        }
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        const user = new User({ username, email, password: hashedPassword });
+        await user.save();
+
+        // Response add gareko
+        res.status(201).json({ message: 'User registered successfully' });
+
+    } catch (error) {
+        console.error('Error registering user:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+export const login = async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required' });
+    }
+
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ message: 'User not found' });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        const accessToken = jwt.sign(
+            { id: user._id, role: user.role },  
+            process.env.ACCESS_TOKEN_SECRET, 
+            { expiresIn: "15m" }
+        );
+
+        const refreshToken = jwt.sign(
+            { id: user._id, role: user.role },  
+            process.env.REFRESH_TOKEN_SECRET, 
+            { expiresIn: "7d" }
+        );
+
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "Strict",
+        });
+    
+        res.status(200).json({ 
+            accessToken,
+            user: {
+                id: user._id,
+                username: user.username,
+                email: user.email,
+                role: user.role,
+            }
+            });
+
+
+
+    } catch (error) {
+        console.error('Error logging in: user', error);
+        return res.status(500).json({ message: 'Server error' });
+    }
+};
+
+export const logout = (req, res) => {
+    const token = req.cookies.refreshToken;
+}
