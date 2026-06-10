@@ -82,6 +82,54 @@ export const login = async (req, res) => {
     }
 };
 
-export const logout = (req, res) => {
+export const refreshToken = async (req, res) => {
     const token = req.cookies.refreshToken;
-}
+
+    if (!token) {
+        return res.status(401).json({ message: "No refresh token provided"});
+    }
+    try {
+        const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+        const user = await User.findById(decoded.id);
+
+        if (!user) {
+            return res.status(401).json({ message: "User not found" });
+        }
+
+        const newRefreshToken = jwt.sign(
+            { id: user._id, role: user.role },
+            process.env.REFRESH_TOKEN_SECRET,
+            { expiresIn: "15m" }
+        );
+
+        res.status(200).json({
+            accessToken: newAccessToken,
+            user: {
+                id: user._id,
+                username: user.username,   
+                email: user.email,
+                role: user.role,
+            }
+            
+        })
+    } catch (error) {
+        console.error("Error refreshing token:", error);
+        return res.status(500).json({ message: 'Server error' });
+    }
+};
+
+export const logout = (req, res) => {
+    try{
+        res.clearCookie("refreshToken", {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "Strict",
+        });
+        res.status(200).json({ message: "Logged out successfully" });
+
+
+    } catch (error) {
+        console.error("Error logging out user:", error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
