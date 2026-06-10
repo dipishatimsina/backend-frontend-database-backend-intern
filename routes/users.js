@@ -9,3 +9,4 @@ router.delete("/:id", verifyToken, verifyRole("admin"), deleteUser);
 router.get("/me", verifyToken, getprofile);
 
 export default router;
+
