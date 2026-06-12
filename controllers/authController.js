@@ -86,35 +86,51 @@ export const refreshToken = async (req, res) => {
     const token = req.cookies.refreshToken;
 
     if (!token) {
-        return res.status(401).json({ message: "No refresh token provided"});
+        return res.status(401).json({
+            message: "No refresh token provided"
+        });
     }
+
     try {
-        const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+        const decoded = jwt.verify(
+            token,
+            process.env.REFRESH_TOKEN_SECRET
+        );
+
         const user = await User.findById(decoded.id);
 
         if (!user) {
-            return res.status(401).json({ message: "User not found" });
+            return res.status(401).json({
+                message: "User not found"
+            });
         }
 
-        const newRefreshToken = jwt.sign(
-            { id: user._id, role: user.role },
-            process.env.REFRESH_TOKEN_SECRET,
-            { expiresIn: "15m" }
+        const newAccessToken = jwt.sign(
+            {
+                id: user._id,
+                role: user.role
+            },
+            process.env.ACCESS_TOKEN_SECRET,
+            {
+                expiresIn: "15m"
+            }
         );
 
         res.status(200).json({
             accessToken: newAccessToken,
             user: {
                 id: user._id,
-                username: user.username,   
+                username: user.username,
                 email: user.email,
-                role: user.role,
+                role: user.role
             }
-            
-        })
+        });
+
     } catch (error) {
         console.error("Error refreshing token:", error);
-        return res.status(500).json({ message: 'Server error' });
+        return res.status(500).json({
+            message: "Server error"
+        });
     }
 };
 
