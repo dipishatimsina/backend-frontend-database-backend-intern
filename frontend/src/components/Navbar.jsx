@@ -1,9 +1,23 @@
 import React from 'react'
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
-    const { auth } = useAuth();
+    const navigate = useNavigate();
+    const { auth, setAuth } = useAuth();
+
+    const handleLogout = async () => {
+      try {
+        await axios.post("/api/auth/logout", {}, { withCredentials: true });
+        setAuth(null);
+        navigate('/login'); //Redirect to login after logout
+      }
+      catch (error) {
+        console.error("Logout failed", error);
+        //Optionally handle the error, e.g., show a notification
+
+      }
+    }
 
   return (
     <nav className="bg-gray-800 p-4 text-white">
