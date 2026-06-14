@@ -1,37 +1,50 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect, useContext } from "react";
 import axios from "axios";
 
-const AuthContext = createContext();
+// Create Context
+export const AuthContext = createContext(null);
 
+// Provider Component
 export const AuthProvider = ({ children }) => {
-    const [auth, setAuth] = useState(null);
-    const [loading, setLoading] = useState(true);
+  const [auth, setAuth] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const checkAuth = async () => {
-            try {
-                const res = await axios.get("/api/auth/refresh", {
-                    withCredentials: true,
-                });
-                setAuth({ accessToken: res.data.accessToken, role: res.data.role });
-            } catch (error) {
-                setAuth(null);
-            } finally {
-                setLoading(false);
-            }
-        };
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await axios.get("/api/auth/refresh", {
+          withCredentials: true,
+        });
 
-        checkAuth();
-    }, []);
+        setAuth({
+          accessToken: res.data.accessToken,
+          role: res.data.role,
+        });
+      } catch (error) {
+        console.error("Auth check failed:", error);
+        setAuth(null);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    return (
-        <AuthContext.Provider value={{ auth, loading, setAuth }}>
-            {children}
-        </AuthContext.Provider>
-    );
+    checkAuth();
+  }, []);
+
+  return (
+    <AuthContext.Provider
+      value={{
+        auth,
+        setAuth,
+        loading,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
-export const useAuth = () => useContext(AuthContext);
-
-
-        
+// Custom Hook
+export const useAuth = () => {
+  return useContext(AuthContext);
+};
