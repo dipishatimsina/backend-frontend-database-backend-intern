@@ -9,7 +9,14 @@ function App() {
       <AuthProvider>
         <Navbar />
         <Routes>
-          <Route path="/login" elemeent={<Login />} />
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            }
+          />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
